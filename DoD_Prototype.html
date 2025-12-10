@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DoD Prototype HTML</title>
+<style>
+  body {
+    background: #fff; /* white backdrop */
+    display: flex;
+    justify-content: center;
+    align-items: start;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden; /* prevent scrollbars */
+  }
+  canvas {
+    display: block;
+    background: #eee; /* light gray game area */
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="1226" height="733"></canvas>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const inset = 40;
+const arenaHeight = 500;
+const portraitWidth = 220;
+const playerBoxWidth = 50;
+const playerBoxHeight = 50;
+const triangleMargin = 4;
+
+let orientation = 0;
+let triangleColor = 'red';
+let flickerVisible = true;
+let enemyOrbs = [];
+
+let characterPortrait = new Image();
+characterPortrait.src = 'portrait.png';
+
+// --- Initialize orbs ---
+function spawnOrbs() {
+    enemyOrbs = [];
+    const numOrbs = 1 + Math.floor(Math.random() * 3);
+    const colors = ['red', 'green', 'blue'];
+    let orbColors = colors.slice(0, numOrbs);
+    orbColors.sort(() => Math.random() - 0.5);
+
+    const arenaW = canvas.width - inset*2 - portraitWidth - 20;
+    const arenaX = inset;
+    const arenaY = inset;
+
+    const slotWidth = arenaW / numOrbs;
+    for (let i = 0; i < numOrbs; i++) {
+        let orbX = arenaX + i * slotWidth + slotWidth/2 - 25;
+        let orbY = arenaY + arenaHeight/2 - 25;
+        enemyOrbs.push({
+            x: orbX,
+            y: orbY,
+            size: 50,
+            color: orbColors[i],
+            orientation: Math.floor(Math.random() * 4)
+        });
+    }
+}
+
+// --- Draw everything ---
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const arenaX = inset;
+    const arenaY = inset;
+    const arenaW = canvas.width - inset*2 - portraitWidth - 20;
+    const arenaH = arenaHeight;
+
+    // Arena border
+    ctx.strokeStyle = 'rgb(0,180,255)';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(arenaX, arenaY, arenaW, arenaH);
+
+    // Player box
+    const playerX = arenaX + arenaW/2 - playerBoxWidth/2;
+    const playerY = arenaY + arenaH + 10;
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(playerX, playerY, playerBoxWidth, playerBoxHeight);
+
+    // Central triangle inside player box
+    if (flickerVisible) {
+        const triSize = (playerBoxWidth/2) - triangleMargin;
+        ctx.save();
+        ctx.translate(playerX + playerBoxWidth/2, playerY + playerBoxHeight/2);
+        ctx.rotate(orientation * Math.PI/2);
+        ctx.fillStyle = triangleColor;
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.lineTo(-triSize,-triSize);
+        ctx.lineTo(-triSize,triSize);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Character portrait
+    if (characterPortrait.complete) {
+        const portraitX = canvas.width - portraitWidth - 20;
+        const portraitY = arenaY;
+        ctx.drawImage(characterPortrait, portraitX, portraitY, portraitWidth, arenaH);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(portraitX, portraitY, portraitWidth, arenaH);
+    }
+
+    // Enemy orbs
+    enemyOrbs.forEach(orb => {
+        ctx.fillStyle = orb.color;
+        ctx.beginPath();
+        ctx.arc(orb.x + orb.size/2, orb.y + orb.size/2, orb.size/2, 0, 2*Math.PI);
+        ctx.fill();
+
+        // draw triangle inside enemy orb for orientation
+        ctx.save();
+        ctx.translate(orb.x + orb.size/2, orb.y + orb.size/2);
+        ctx.rotate(orb.orientation * Math.PI/2);
+        const triSize = orb.size/2 - 4;
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.lineTo(-triSize,-triSize);
+        ctx.lineTo(-triSize,triSize);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    });
+}
+
+// --- Flicker effect ---
+function flicker() {
+    flickerVisible = true;
+    let elapsed = 0;
+    const interval = setInterval(() => {
+        elapsed += 16;
+        flickerVisible = Math.floor(elapsed/30) % 2 === 0;
+        if (elapsed >= 500) {
+            flickerVisible = true;
+            clearInterval(interval);
+        }
+    }, 16);
+}
+
+// --- Key controls ---
+document.addEventListener('keydown', e => {
+    // prevent scrolling
+    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
+        e.preventDefault();
+    }
+
+    switch(e.key){
+        case 'ArrowRight': orientation = (orientation + 1)%4; break;
+        case 'ArrowLeft': orientation = (orientation + 3)%4; break;
+        case 'ArrowUp':
+            triangleColor = triangleColor==='red'?'green':triangleColor==='green'?'blue':'red';
+            break;
+        case 'ArrowDown':
+            enemyOrbs = enemyOrbs.filter(orb => !(orb.orientation===orientation && orb.color===triangleColor));
+            flicker();
+            if(enemyOrbs.length===0) spawnOrbs();
+            break;
+    }
+});
+
+// --- Main loop ---
+spawnOrbs();
+setInterval(draw,16);
+</script>
+</body>
+</html>
