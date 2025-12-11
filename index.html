@@ -5,7 +5,7 @@
 <title>DoD Prototype HTML</title>
 <style>
   body {
-    background: #fff; /* white background */
+    background: #fff;
     display: flex;
     justify-content: center;
     align-items: start;
@@ -13,9 +13,9 @@
     margin: 0;
   }
   canvas {
-    background: #222; /* arena background */
+    background: #222;
     display: block;
-    outline: none; /* remove default focus outline */
+    outline: none;
   }
 </style>
 </head>
@@ -29,20 +29,20 @@ let ambientSound = new Audio('ambient.mp3');
 ambientSound.loop = true;
 
 let hitSound = new Audio('hit.mp3');
+let chimeSound = new Audio('chime.mp3');
 
 let clearedOrientations = [
-	[false, false, false, false],
-	[false, false, false, false],
-	[false, false, false, false]
+  [false,false,false,false],
+  [false,false,false,false],
+  [false,false,false,false]
 ];
 
 let combos = [
-	{ active: false, count: 0},
-	{ active: false, count: 0},
-	{ active: false, count: 0}
+  {active:false, count:0},
+  {active:false, count:0},
+  {active:false, count:0}
 ];
 
-// Automatically focus canvas so arrow keys work
 canvas.focus();
 
 const inset = 40;
@@ -61,55 +61,47 @@ let characterPortrait = new Image();
 characterPortrait.src = 'portrait.png';
 
 // --- Initialize orbs ---
-function spawnOrbs() {
+function spawnOrbs(){
     enemyOrbs = [];
-    const numOrbs = 1 + Math.floor(Math.random() * 3);
-    const colors = ['red', 'green', 'blue'];
-    let orbColors = colors.slice(0, numOrbs);
-    orbColors.sort(() => Math.random() - 0.5);
+    const numOrbs = 1 + Math.floor(Math.random()*3);
+    const colors = ['red','green','blue'];
+    let orbColors = colors.slice(0,numOrbs).sort(()=>Math.random()-0.5);
 
     const arenaW = canvas.width - inset*2 - portraitWidth - 20;
     const arenaX = inset;
     const arenaY = inset;
+    const slotWidth = arenaW/numOrbs;
 
-    const slotWidth = arenaW / numOrbs;
-    for (let i = 0; i < numOrbs; i++) {
-        let orbX = arenaX + i * slotWidth + slotWidth/2 - 25;
+    for(let i=0;i<numOrbs;i++){
+        let orbX = arenaX + i*slotWidth + slotWidth/2 - 25;
         let orbY = arenaY + arenaHeight/2 - 25;
-        enemyOrbs.push({
-            x: orbX,
-            y: orbY,
-            size: 50,
-            color: orbColors[i],
-            orientation: Math.floor(Math.random() * 4)
-        });
+        enemyOrbs.push({x:orbX, y:orbY, size:50, color:orbColors[i], orientation:Math.floor(Math.random()*4)});
     }
 }
 
-// --- Draw everything ---
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+// --- Draw ---
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
     const arenaX = inset;
     const arenaY = inset;
     const arenaW = canvas.width - inset*2 - portraitWidth - 20;
     const arenaH = arenaHeight;
 
-    // Arena border
-    ctx.strokeStyle = 'rgb(0,180,255)';
-    ctx.lineWidth = 5;
-    ctx.strokeRect(arenaX, arenaY, arenaW, arenaH);
+    ctx.strokeStyle='rgb(0,180,255)';
+    ctx.lineWidth=5;
+    ctx.strokeRect(arenaX,arenaY,arenaW,arenaH);
 
-    // --- Player box ---
+    // Player box
     const playerX = arenaX + arenaW/2 - playerBoxWidth/2;
     const playerY = arenaY + arenaH + 10;
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(playerX, playerY, playerBoxWidth, playerBoxHeight);
+    ctx.strokeStyle='black';
+    ctx.lineWidth=1;
+    ctx.strokeRect(playerX,playerY,playerBoxWidth,playerBoxHeight);
 
-    // --- Central triangle inside player box ---
-    if (flickerVisible) {
-        const triSize = (playerBoxWidth/2) - triangleMargin;
+    // Triangle
+    if(flickerVisible){
+        const triSize = (playerBoxWidth/2)-triangleMargin;
         ctx.save();
         ctx.translate(playerX + playerBoxWidth/2, playerY + playerBoxHeight/2);
         ctx.rotate(orientation * Math.PI/2);
@@ -123,29 +115,61 @@ function draw() {
         ctx.restore();
     }
 
-    // --- Character portrait ---
-    if (characterPortrait.complete) {
+    // Character portrait
+    if(characterPortrait.complete){
         const portraitX = canvas.width - portraitWidth - 20;
         const portraitY = arenaY;
         ctx.drawImage(characterPortrait, portraitX, portraitY, portraitWidth, arenaH);
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(portraitX, portraitY, portraitWidth, arenaH);
+        ctx.strokeStyle='black';
+        ctx.lineWidth=2;
+        ctx.strokeRect(portraitX,portraitY,portraitWidth,arenaH);
     }
 
-    // --- Enemy orbs ---
-    enemyOrbs.forEach(orb => {
+    // Combos display
+    const shapeSize = 20;
+    const spacing = 20;
+    const startX = canvas.width - portraitWidth - 20;
+    const startY = arenaHeight + 40;
+
+    ['red','green','blue'].forEach((color,i)=>{
+        if(combos[i].active){
+            const cx = startX + i*(shapeSize*2 + spacing) + shapeSize;
+            const cy = startY + shapeSize;
+
+            // Diamond
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy-shapeSize);
+            ctx.lineTo(cx-shapeSize, cy);
+            ctx.lineTo(cx, cy+shapeSize);
+            ctx.lineTo(cx+shapeSize, cy);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle='black';
+            ctx.lineWidth=2;
+            ctx.stroke();
+
+            ctx.fillStyle='white';
+            ctx.font='14px Arial';
+            const text = combos[i].count;
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, cx - textWidth/2, cy + shapeSize + 16);
+        }
+    });
+
+    // Enemy orbs
+    enemyOrbs.forEach(orb=>{
         ctx.fillStyle = orb.color;
         ctx.beginPath();
-        ctx.arc(orb.x + orb.size/2, orb.y + orb.size/2, orb.size/2, 0, 2*Math.PI);
+        ctx.arc(orb.x + orb.size/2, orb.y + orb.size/2, orb.size/2,0,2*Math.PI);
         ctx.fill();
 
-        // draw small triangle inside orb to show orientation
-        const triSize = 10;
+        const triSize=10;
         ctx.save();
         ctx.translate(orb.x + orb.size/2, orb.y + orb.size/2);
-        ctx.rotate(orb.orientation * Math.PI/2);
-        ctx.fillStyle = 'black';
+        ctx.rotate(orb.orientation*Math.PI/2);
+        ctx.fillStyle='black';
         ctx.beginPath();
         ctx.moveTo(0,0);
         ctx.lineTo(-triSize,-triSize);
@@ -156,44 +180,65 @@ function draw() {
     });
 }
 
-// --- Flicker effect ---
-function flicker() {
+// --- Flicker ---
+function flicker(){
     flickerVisible = true;
     let elapsed = 0;
-    const interval = setInterval(() => {
-        elapsed += 16;
-        flickerVisible = Math.floor(elapsed/30) % 2 === 0;
-        if (elapsed >= 500) {
-            flickerVisible = true;
+    const interval = setInterval(()=>{
+        elapsed+=16;
+        flickerVisible = Math.floor(elapsed/30)%2===0;
+        if(elapsed>=500){
+            flickerVisible=true;
             clearInterval(interval);
         }
-    }, 16);
+    },16);
 }
 
-// --- Key controls ---
-canvas.addEventListener('keydown', e => {
-	ambientSound.play();
-    switch(e.key) {
-        case 'ArrowRight': orientation = (orientation + 1)%4; break;
-        case 'ArrowLeft': orientation = (orientation + 3)%4; break;
+// --- Controls ---
+canvas.addEventListener('keydown', e=>{
+    ambientSound.play();
+    switch(e.key){
+        case 'ArrowRight': orientation=(orientation+1)%4; break;
+        case 'ArrowLeft': orientation=(orientation+3)%4; break;
         case 'ArrowUp':
             triangleColor = triangleColor==='red'?'green':triangleColor==='green'?'blue':'red';
             break;
         case 'ArrowDown':
-			let hit = false;
-            enemyOrbs = enemyOrbs.filter(orb => {
-			if (orb.orientation === orientation && orb.color === triangleColor) {
-				hit = true;
-				return false;
-			}
-				return true;
+            let hit=false;
+
+            enemyOrbs = enemyOrbs.filter(orb=>{
+                if(orb.orientation===orientation && orb.color===triangleColor){
+                    hit=true;
+                    const colorIndex = triangleColor==='red'?0:triangleColor==='green'?1:2;
+                    clearedOrientations[colorIndex][orientation]=true;
+
+                    if(clearedOrientations[colorIndex].every(v=>v)){
+                        combos[colorIndex].active=true;
+                        combos[colorIndex].count++;
+                        chimeSound.currentTime=0;
+                        chimeSound.play();
+                        clearedOrientations[colorIndex] = [false,false,false,false];
+                    }
+                    return false;
+                }
+                return true;
             });
-			if(hit) hitSound.play();
-			flicker();
-            if (enemyOrbs.length===0) spawnOrbs();
+
+            // Miss -> reset all progress & hide diamonds
+            if(!hit){
+                ['red','green','blue'].forEach((c,i)=>{
+                    clearedOrientations[i] = [false,false,false,false];
+                    combos[i].active=false;
+                });
+            }
+
+            if(hit) hitSound.play();
+            flicker();
+
+            if(enemyOrbs.length===0) spawnOrbs();
             break;
     }
-    e.preventDefault(); // prevent browser scrolling
+    e.preventDefault();
 });
 
 // --- Main loop ---
