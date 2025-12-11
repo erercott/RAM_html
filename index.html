@@ -30,6 +30,18 @@ ambientSound.loop = true;
 
 let hitSound = new Audio('hit.mp3');
 
+let clearedOrientations = [
+	[false, false, false, false],
+	[false, false, false, false],
+	[false, false, false, false]
+];
+
+let combos = [
+	{ active: false, count: 0},
+	{ active: false, count: 0},
+	{ active: false, count: 0}
+];
+
 // Automatically focus canvas so arrow keys work
 canvas.focus();
 
