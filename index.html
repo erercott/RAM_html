@@ -168,9 +168,16 @@ canvas.addEventListener('keydown', e => {
             triangleColor = triangleColor==='red'?'green':triangleColor==='green'?'blue':'red';
             break;
         case 'ArrowDown':
-            // clear matching enemies
-            enemyOrbs = enemyOrbs.filter(orb => !(orb.orientation === orientation && orb.color === triangleColor));
-            flicker();
+			let hit = false;
+            enemyOrbs = enemyOrbs.filter(orb => {
+			if (orb.orientation === orientation && orb.color === triangleColor) {
+				hit = true;
+				return false;
+			}
+				return true;
+            });
+			if(hit) hitSound.play();
+			flicker();
             if (enemyOrbs.length===0) spawnOrbs();
             break;
     }
