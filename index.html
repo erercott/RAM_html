@@ -25,6 +25,11 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+let ambientSound = new Audio('ambient.mp3');
+ambientSound.loop = true;
+
+let hitSound = new Audio('hit.mp3');
+
 // Automatically focus canvas so arrow keys work
 canvas.focus();
 
@@ -155,6 +160,7 @@ function flicker() {
 
 // --- Key controls ---
 canvas.addEventListener('keydown', e => {
+	ambientSound.play();
     switch(e.key) {
         case 'ArrowRight': orientation = (orientation + 1)%4; break;
         case 'ArrowLeft': orientation = (orientation + 3)%4; break;
