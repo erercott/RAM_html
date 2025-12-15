@@ -65,8 +65,12 @@ function spawnOrbs(){
     enemyOrbs = [];
     const numOrbs = 1 + Math.floor(Math.random()*3);
     const colors = ['red','green','blue'];
-    let orbColors = colors.slice(0,numOrbs).sort(()=>Math.random()-0.5);
-
+    let orbColors = [];
+	
+	for(let i=0;i<numOrbs;i++){
+		orbColors.push(colors[Math.floor(Math.random()*3)]);
+	}
+	
     const arenaW = canvas.width - inset*2 - portraitWidth - 20;
     const arenaX = inset;
     const arenaY = inset;
@@ -228,7 +232,8 @@ canvas.addEventListener('keydown', e=>{
             if(!hit){
                 ['red','green','blue'].forEach((c,i)=>{
                     clearedOrientations[i] = [false,false,false,false];
-                    combos[i].active=false;
+                    combos[i].count = 0;
+					combos[i].active = false; 
                 });
             }
 
